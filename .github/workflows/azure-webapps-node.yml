@@ -1,0 +1,78 @@
+# سيقوم سير العمل هذا ببناء ودفع تطبيق node.js إلى تطبيق Azure Web عند دفع التزام إلى الفرع الافتراضي الخاص بك.
+#
+يفترض سير العمل هذا أنك أنشأت بالفعل تطبيق الويب Azure App Service المستهدف.
+# للحصول على تعليمات انظر https://docs.microsoft.com/en-us/azure/app-service/quickstart-nodejs?tabs=linux&pivots=development-environment-cli
+#
+# لتكوين سير العمل هذا:
+#
+# 1. قم بتنزيل ملف النشر لتطبيق Azure Web الخاص بك. يمكنك تنزيل هذا الملف من صفحة النظرة العامة لتطبيق الويب الخاص بك في بوابة Azure.
+# لمزيد من المعلومات: https://docs.microsoft.com/en-us/azure/app-service/deploy-github-actions?tabs=applevel#generate-deployment-credentials
+#
+# 2.إنشاء سر في مستودعك المسمى AZURE_WEBAPP_PUBLISH_PROFILE، ولصق محتويات ملفك الشخصي المنشور كقيمة للسر.
+# للحصول على تعليمات حول الحصول على ملف النشر، انظر: https://docs.microsoft.com/azure/app-service/deploy-github-actions#configure-the-github-secret
+#
+# 3.تغيير القيمة ل AZURE_WEBAPP_NAME. اختياريا، قم بتغيير متغيرات بيئة AZURE_WEBAPP_PACKAGE_PATH و NODE_VERSION أدناه.
+#
+# لمزيد من المعلومات حول إجراءات GitHub ل Azure: https://github.com/Azure/Actions
+# لمزيد من المعلومات حول إجراءات نشر تطبيقات Azure Web: https://github.com/Azure/webapps-deploy
+# لمزيد من العينات للبدء مع سير عمل GitHub Action لنشرها في Azure: https://github.com/Azure/actions-workflow-samples
+
+على:
+  دفع:
+    فروع:[ "الرئيسية" ]
+  Workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: your-app-name    # set this to your application's name
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
+  NODE_VERSION: '20.x'                # set this to the node version to use
+
+permissions:
+  contents: اقرأ
+
+jobs:
+  build:
+    runs-on: أوبونتو-لاتيه
+    steps:
+    - uses: الإجراءات/الخروج@v4
+
+    - name: إعداد Node.js
+      uses: الإجراءات/إعداد العقدة@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: NPM تثبيت وبناء واختبار
+      run: |
+        npm install
+        npm run build --if-present
+        npm run test --if-present
+
+    - name: تحميل قطعة أثرية لوظيفة النشر
+      uses: الإجراءات/التحميل-القطع الأثرية@v4
+      with:
+        name: العقدة التطبيق
+        path: .
+
+  deploy:
+    permissions:
+      contents: لا شيء
+    runs-on: أوبونتو-لاتيه
+    needs: بناء
+    environment:
+      name: 'Development'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v4
+      with:
+        name: node-app
+
+    - name: 'Deploy to Azure WebApp'
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

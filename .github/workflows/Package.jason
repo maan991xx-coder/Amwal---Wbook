@@ -1,0 +1,14 @@
+{
+  "name": "amwal-webhook",
+  "version": "1.0.0",
+  "description": "Webhook لاستقبال الدفع من أموال بي وإرسال الفاتورة",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2"
+  }
+}
